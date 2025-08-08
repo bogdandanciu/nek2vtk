@@ -42,12 +42,13 @@ def parse_arguments():
         "input_file",
         help="Nek5000 field file name (e.g., test_cycle0.f00001)"
     )
-    parser.add_argument(
-        "json_file",
-        help="Reference quantities JSON file name (e.g., test_cycle.json)"
-    )
     
     # Optional arguments
+    parser.add_argument(
+        "--json-file",
+        default=None,
+        help="Reference quantities JSON file for unit conversion (optional)"
+    )
     parser.add_argument(
         "--vtk",
         action="store_true",
@@ -318,8 +319,9 @@ def readnek(fname, ref_values=None, dtype="float64", skip_vars=()):
     ----------
     fname : str
         File name
-    ref_values : list
-        List with the reference values [lRef, uRef, TRef, pRef, YRef]
+    ref_values : list or None
+        List with the reference values [lRef, uRef, TRef, pRef, YRef].
+        If None, uses default values of 1.0 (no scaling).
     dtype : str or type
         Floating point data type
     skip_vars : tuple[str]
@@ -332,7 +334,8 @@ def readnek(fname, ref_values=None, dtype="float64", skip_vars=()):
         Data structure containing the read field data
     """
     if ref_values is None:
-        ref_values = []
+        # Default reference values (no scaling)
+        ref_values = [1.0, 1.0, 1.0, 1.0, 1.0]
     
     try:
         infile = open(fname, "rb")
@@ -549,25 +552,36 @@ def read_reference_values(json_filename):
     
     Parameters
     ----------
-    json_filename : str
-        Path to JSON file containing reference values
+    json_filename : str or None
+        Path to JSON file containing reference values.
+        If None, returns default values (no scaling).
     
     Returns
     -------
     tuple
         (ref_values, scalars_names) where ref_values is [lRef, uRef, TRef, pRef, YRef]
     """
-    print(f'\n>>>> Reading JSON file {json_filename}', flush=True)
-    
-    with open(json_filename) as fjson:
-        data_json = json.load(fjson)
-    
-    lRef = data_json["reference_length"]["value"]
-    uRef = data_json["reference_velocity"]["value"]
-    TRef = data_json["reference_temperature"]["value"]
-    pRef = data_json["reference_pressure"]["value"]
-    YRef = data_json["reference_mass_fractions"]["value"]
-    scalars_names = data_json["species"]["names"]
+    if json_filename is None:
+        print('\n>>>> No JSON file provided, using default reference values (no unit conversion)', flush=True)
+        # Default values (no scaling)
+        lRef = 1.0
+        uRef = 1.0
+        TRef = 1.0
+        pRef = 1.0
+        YRef = 1.0
+        scalars_names = [f"scalar_{i:02d}" for i in range(99)]  # Generic names for scalars
+    else:
+        print(f'\n>>>> Reading JSON file {json_filename}', flush=True)
+        
+        with open(json_filename) as fjson:
+            data_json = json.load(fjson)
+        
+        lRef = data_json["reference_length"]["value"]
+        uRef = data_json["reference_velocity"]["value"]
+        TRef = data_json["reference_temperature"]["value"]
+        pRef = data_json["reference_pressure"]["value"]
+        YRef = data_json["reference_mass_fractions"]["value"]
+        scalars_names = data_json["species"]["names"]
     
     ref_values = [lRef, uRef, TRef, pRef, YRef]
     
@@ -687,7 +701,6 @@ def write_hdf5_file(nekdata, scalars_names, output_filename):
 
 def main():
     """Main function to coordinate the conversion process."""
-
     # Record start time
     t00 = time.time()
     
@@ -699,7 +712,7 @@ def main():
         print("Error: At least one output format (--vtk or --hdf5) must be specified")
         sys.exit(1)
     
-    # Read reference values from JSON file
+    # Read reference values from JSON file (if provided)
     ref_values, scalars_names = read_reference_values(args.json_file)
     
     # Read Nek5000 field file
@@ -745,3 +758,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
