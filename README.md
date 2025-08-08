@@ -7,7 +7,7 @@ This tool reads Nek5000's binary output files (.f***** format) and converts them
 ## Requirements
 
 ```bash
-pip install numpy h5py meshio attrs
+pip install -r requirements.txt
 ```
 
 ## Usage
