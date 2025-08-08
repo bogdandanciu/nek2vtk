@@ -1,0 +1,6 @@
+# Core dependencies for Nek5000 Field File Converter
+numpy>=1.19.0
+h5py>=3.0.0
+meshio>=5.0.0
+attrs>=21.0.0
+
