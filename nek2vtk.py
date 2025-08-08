@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import logging
 import os
 import struct
 import sys
@@ -23,11 +24,46 @@ import h5py
 import meshio
 import numpy as np
 from attrs import define, field
-from pymech.log import logger
 
 # Type aliases
 StringOrBytes = Union[str, bytes]
 PathLike = Union[str, os.PathLike]
+
+
+def setup_logger(name="nek5000_converter", level=logging.INFO):
+    """
+    Set up a logger for the script.
+    
+    Parameters
+    ----------
+    name : str
+        Logger name
+    level : int
+        Logging level (e.g., logging.INFO, logging.DEBUG)
+    
+    Returns
+    -------
+    logging.Logger
+        Configured logger instance
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    
+    # Create console handler if it doesn't exist
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    
+    return logger
+
+
+# Initialize logger
+logger = setup_logger()
 
 
 def parse_arguments():
@@ -86,6 +122,11 @@ def parse_arguments():
         nargs="*",
         default=[],
         help="Variables to skip (e.g., x y z ux uy uz pressure temperature)"
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose/debug output"
     )
     
     return parser.parse_args()
@@ -707,6 +748,10 @@ def main():
     # Parse command line arguments
     args = parse_arguments()
     
+    # Set logging level based on verbose flag
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    
     # Check that at least one output format is specified
     if not args.vtk and not args.hdf5:
         print("Error: At least one output format (--vtk or --hdf5) must be specified")
@@ -758,4 +803,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
