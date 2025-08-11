@@ -16,13 +16,13 @@ pip install -r requirements.txt
 
 ```bash
 # Convert to VTK
-python nek5000_converter.py field0.f00001 --vtk
+python nek2vtk.py field0.f00001 --vtk
 
 # Convert to HDF5
-python nek5000_converter.py field0.f00001 --hdf5
+python nek2vtk.py field0.f00001 --hdf5
 
 # Both formats
-python nek5000_converter.py field0.f00001 --vtk --hdf5
+python nek2vtk.py field0.f00001 --vtk --hdf5
 ```
 
 ### With Unit Conversion
